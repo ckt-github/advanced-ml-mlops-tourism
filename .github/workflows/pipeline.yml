@@ -56,8 +56,20 @@ jobs:
       run: |
         if [ -f src/update_deployment_assets.py ]; then python src/update_deployment_assets.py; fi
 
-    # Skip auto-commit/push to avoid 403 (no write permission for github-actions[bot])
+    # Auto-commit and push generated artifacts.
+    # Uses CI_PAT (Personal Access Token) if provided; otherwise it just skips push.
     - name: Commit and push generated artifacts
-      if: false
+      env:
+        CI_PAT: ${{ secrets.CI_PAT }}
       run: |
-        echo "Skipping auto-commit and push from GitHub Actions (no repo write permissions)."
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        git commit -m "Auto-update artifacts from MLOps pipeline" || echo "No changes to commit"
+        if [ -n "$CI_PAT" ]; then
+          echo "Pushing with CI_PAT..."
+          git remote set-url origin https://x-access-token:${CI_PAT}@github.com/{GITHUB_USERNAME}/{REPO_NAME}.git
+          git push origin HEAD:main
+        else
+          echo "CI_PAT not set, skipping push (step will still succeed)."
+        fi
