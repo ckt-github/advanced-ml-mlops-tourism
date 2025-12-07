@@ -1,0 +1,2 @@
+model_name,best_cv_roc_auc,test_accuracy,test_precision,test_recall,test_f1,test_roc_auc,model__n_estimators,model__min_samples_split,model__min_samples_leaf,model__max_features,model__max_depth,model__bootstrap
+RandomForestClassifier,0.9448039300965461,0.9103362391033624,0.946236559139785,0.567741935483871,0.7096774193548387,0.9641079251294306,200,5,2,log2,,False
