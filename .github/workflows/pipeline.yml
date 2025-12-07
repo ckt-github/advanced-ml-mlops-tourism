@@ -24,52 +24,68 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        pip install datasets huggingface_hub scikit-learn joblib xgboost fastapi uvicorn
+        # Core libs – sklearn pinned to 1.6.1 to stay consistent with training & deployment
+        pip install datasets huggingface_hub scikit-learn==1.6.1 joblib xgboost fastapi uvicorn
 
+    # -----------------------------
+    # Data preparation step
+    # (load from HF, clean, split, upload)
+    # In this project, src/data_preparation.py is a placeholder that keeps CI green.
+    # -----------------------------
     - name: Run data preparation
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/data_preparation.py
 
+    # -----------------------------
+    # Model training + tuning step
+    # (experimentation + logging)
+    # Placeholder in this repo – real training happens in notebooks.
+    # -----------------------------
     - name: Run model training & tuning
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/train_model.py
 
+    # -----------------------------
+    # Evaluation step
+    # -----------------------------
     - name: Evaluate model
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/evaluate_model.py
 
+    # -----------------------------
+    # Register best model to Hugging Face Hub
+    # -----------------------------
     - name: Register best model to Hugging Face Hub
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/register_model_hf.py
 
+    # -----------------------------
+    # (Optional) Deployment update step
+    # e.g., regenerate deployment files or trigger Space update
+    # -----------------------------
     - name: Update deployment assets
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         if [ -f src/update_deployment_assets.py ]; then python src/update_deployment_assets.py; fi
 
-    # Auto-commit and push generated artifacts.
-    # Uses CI_PAT (Personal Access Token) if provided; otherwise it just skips push.
+    # -----------------------------
+    # Auto-commit and push code updates to main
+    # -----------------------------
     - name: Commit and push generated artifacts
       env:
-        CI_PAT: ${{ secrets.CI_PAT }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git add .
         git commit -m "Auto-update artifacts from MLOps pipeline" || echo "No changes to commit"
-        if [ -n "$CI_PAT" ]; then
-          echo "Pushing with CI_PAT..."
-          git remote set-url origin https://x-access-token:${CI_PAT}@github.com/{GITHUB_USERNAME}/{REPO_NAME}.git
-          git push origin HEAD:main
-        else
-          echo "CI_PAT not set, skipping push (step will still succeed)."
-        fi
+        git push origin HEAD:main || echo "Git push failed (check permissions/GITHUB_TOKEN)."
