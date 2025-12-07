@@ -26,63 +26,38 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         pip install datasets huggingface_hub scikit-learn joblib xgboost fastapi uvicorn
 
-    # -----------------------------
-    # Data preparation step
-    # (load from HF, clean, split, upload)
-    # -----------------------------
     - name: Run data preparation
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/data_preparation.py
 
-    # -----------------------------
-    # Model training + tuning step
-    # (experimentation + logging)
-    # -----------------------------
     - name: Run model training & tuning
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/train_model.py
 
-    # -----------------------------
-    # Evaluation step
-    # -----------------------------
     - name: Evaluate model
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/evaluate_model.py
 
-    # -----------------------------
-    # Register best model to Hugging Face Hub
-    # -----------------------------
     - name: Register best model to Hugging Face Hub
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         python src/register_model_hf.py
 
-    # -----------------------------
-    # (Optional) Deployment update step
-    # e.g., regenerate deployment files or trigger Space update
-    # -----------------------------
     - name: Update deployment assets
       env:
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
       run: |
         if [ -f src/update_deployment_assets.py ]; then python src/update_deployment_assets.py; fi
 
-    # -----------------------------
-    # Auto-commit and push code updates to main
-    # -----------------------------
+    # Skip auto-commit/push to avoid 403 (no write permission for github-actions[bot])
     - name: Commit and push generated artifacts
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      if: false
       run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add .
-        git commit -m "Auto-update artifacts from MLOps pipeline" || echo "No changes to commit"
-        git push origin HEAD:main
+        echo "Skipping auto-commit and push from GitHub Actions (no repo write permissions)."
